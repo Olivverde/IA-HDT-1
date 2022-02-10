@@ -101,9 +101,12 @@ class readbmp(object):
         print(len(self.buffer))
         return self.buffer
           
+"""
+TESTING
 
 reader = readbmp("Test2.bmp")
 writer = writebmp()
 width, height = reader.width, reader.height
 print(width, height)
 writer.writebmp("bmp-out.bmp", width, height, reader.buffer)
+"""
