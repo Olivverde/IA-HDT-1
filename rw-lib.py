@@ -2,7 +2,7 @@ import struct
 import mmap
 import numpy
 
-class writebmp(object):
+class Writebmp(object):
 
   def char(self, c):
     """
@@ -64,7 +64,7 @@ class writebmp(object):
         f.write(pixels[x][y])
     f.close()
 
-class readbmp(object):
+class Readbmp(object):
     def __init__(self, path):
         self.path = path
         self.read()
@@ -86,7 +86,6 @@ class readbmp(object):
         all_bytes = ba[header_size::]
         self.pixels = numpy.frombuffer(all_bytes, dtype='uint8')
         img.close()
-        print(len(self.pixels))
         
         for i in range(len(self.pixels)):
           self.aux.append(self.pixels[i])
@@ -98,14 +97,13 @@ class readbmp(object):
               self.buffer.append(self.processed)
               self.processed = []
         
-        print(len(self.buffer))
         return self.buffer
           
 """
 TESTING
 
-reader = readbmp("Test2.bmp")
-writer = writebmp()
+reader = Readbmp("Test2.bmp")
+writer = Writebmp()
 width, height = reader.width, reader.height
 print(width, height)
 writer.writebmp("bmp-out.bmp", width, height, reader.buffer)
