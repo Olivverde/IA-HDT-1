@@ -1,6 +1,7 @@
 import struct
 import mmap
 import numpy
+import time
 
 class Writebmp(object):
 
@@ -32,11 +33,11 @@ class Writebmp(object):
     """
     return struct.pack('=l', d)
 
-  def toBytes(self):
-      self.r = int(max(min(self.r, 255), 0))
-      self.g = int(max(min(self.g, 255), 0))
-      self.b = int(max(min(self.b, 255), 0))
-      return bytes([self.b, self.g, self.r])
+  def toBytes(self, r,g,b):
+      r = int(max(min(r, 255), 0))
+      g = int(max(min(g, 255), 0))
+      b = int(max(min(b, 255), 0))
+      return bytes([b, g, r])
 
   def writebmp(self, filename, width, height, pixels):
     f = open(filename, 'bw')
@@ -64,28 +65,25 @@ class Writebmp(object):
         f.write(pixels[x][y])
     f.close()
 
-
-
 class Readbmp(object):
     def __init__(self, path):
         self.path = path
-        self.start = self.color(254,0,0)
-        self.availablePath = self.color(255,255,255)
-        self.wall = self.color(0,0,0)
-        self.goal = self.color(5,252,6)
         self.fraction = 20
+        self.matrix = []
 
         self.read()
-        self.discretization()
+        self.generateMatrix()
+        
         
     
     def color(self, r, g, b): # generador de colores
-      return bytes([r, g, b])
+      return bytes([b, g, r])
 
     def read(self):
         self.aux = []
         self.processed = []
-        self.buffer = [] 
+        self.buffer = []
+        
 
         img = open(self.path, "rb")
         m = mmap.mmap(img.fileno(), 0, access=mmap.ACCESS_READ)
@@ -100,6 +98,8 @@ class Readbmp(object):
         for i in range(len(self.pixels)):
           self.aux.append(self.pixels[i])
           if (len(self.aux) == 3):
+            color = [self.aux[0], self.aux[1], self.aux[2]]
+            color = numpy.array(color,numpy.uint8)
             color = self.color(self.aux[0], self.aux[1], self.aux[2])
             self.processed.append(color)
             self.aux = []
@@ -109,80 +109,63 @@ class Readbmp(object):
         
         return self.buffer
     
-    def stadistics(self, pathFlag, frontier, indexes):
-      color = self.color(1, 1, 1)
-      totalPixels = self.pixelRange**2
-      proportion = pathFlag/totalPixels
-      i, j, xRange, yRange = indexes
-      print(proportion)
-      if proportion >= 0.5 and frontier == 0:
-        color = self.availablePath
-      elif proportion < 0.5 and frontier == 0:
-        color = self.wall
-      elif frontier > 0:
-        color = self.start
-     
-      for a in range(i, xRange):
-        for b in range(j, yRange):
-          self.buffer[a][b] = color
-          #print(a,b,i,j)
-      #input('[ENTER]')
-      self.buffer[0][29]= self.start
-
-
+    def generateMatrix(self): # Limpia el framebuffer aplicandole color negro
+      self.matrix =  [
+      [self.color(0, 0, 0) for x in range(self.fraction)]
+      for y in range(self.fraction)
+      ]
+      
+   
     def discretization(self):
+      color = self.color(1, 1, 1)
       bff = self.buffer
-      flagPath, extraFlag = 0, 0
-      self.i, self.j, self.x, self.y = 0, 0, 0, 0
-      self.pixelRange = round(self.width/self.fraction)
-      self.xFraction, self.yFraction = self.fraction, self.fraction
-      self.xRange, self.yRange = self.pixelRange, self.pixelRange
+      init_index_x = 0
+      init_index_y = 0
+      end_index_x = 29
+      end_index_y = 29
 
-      for x in range(self.x, self.xFraction):
-        for y in range(self.y, self.yFraction):
-          for i in range(self.i, self.xRange):
-            for j in range(self.j, self.yRange):
-              if bff[i][j] == self.availablePath:
-                flagPath += 1
-              elif bff[i][j] == self.goal or bff[i][j] == self.start:
-                extraFlag += 1
-              #print(x,y,i,j)
-          #input('[ENTER]')
-          self.stadistics(flagPath, extraFlag, [self.i, self.j, self.xRange, self.yRange])
-          flagPath, extraFlag = 0,0
-
-          self.j += self.pixelRange
-          self.yRange += self.pixelRange
-        
-        self.j, self.yRange = 0, self.pixelRange
-        self.i += self.pixelRange
-        self.xRange += self.pixelRange
-
-        
+      path_Counter = 0
+      indexErr = 0
+      indexFlag = 0
     
-    """
-    def getFrontierRadio(self):
-      self.radio = 0
-      indexCounter = []
-      frontierColor = self.color(254,0,0)
-      offsetColor = self.color(255,255,255)
-      flag = 0
-
-      for i in range(len(self.buffer)):
-        for pixel in range(len(self.buffer[i])):
-          if self.buffer[i][pixel] == frontierColor and flag < 1:
-            flag += 1
-            self.radio = -pixel
-          elif self.buffer[i][pixel] == offsetColor and flag == 1:
-            flag += 1
-            self.radio += pixel
-            indexCounter.append(self.radio)
-        self.radio = 0
-        flag = 0
-      self.radio = max(indexCounter)
-
-      return self.radio
-    """
+      for big_X in range(20):
+        for big_Y in range(20):
+          
+          for lil_x in range(init_index_x, end_index_x):
+            for lil_y in range(init_index_y, end_index_y):
+              if bff[lil_x][lil_y] == self.color(255, 255, 255):
+                path_Counter += 1
+              elif bff[lil_x][lil_y] == self.color(0, 0, 0):
+                color = ''
+              else:
+                color = bff[lil_x][lil_y]
+          proportion = path_Counter/(29**2)
+          
+          if proportion >= 0.5:
+            self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = self.color(255, 255, 255)
+          elif color:
+            self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = color
+          else:
+            self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = self.color(0, 0, 0)
+          print(big_X, big_Y)
+          print(proportion, self.matrix[big_X][big_Y])
+        
+          init_index_y += 29
+          end_index_y += 29
+          path_Counter = 0
+        indexErr += 1
+        if indexErr >= 4:
+          indexFlag = 1
+        if indexErr >= 8:
+          indexFlag = 3
+        if indexErr >= 16:
+          indexFlag = 5
+      
+        init_index_y = 0
+        end_index_y = 29
+        init_index_x += 29
+        end_index_x += 29
+    
 
           
 """
@@ -190,9 +173,8 @@ TESTING
 """
 reader = Readbmp("Test2.bmp")
 writer = Writebmp()
-width, height = reader.width, reader.height
-print(width, height)
-writer.writebmp("bmp-out.bmp", width, height, reader.buffer)
+reader.discretization()
+writer.writebmp("bmp-out.bmp", reader.fraction, reader.fraction, reader.matrix)
 """
 print(reader.getFrontierRadio())
 
