@@ -125,6 +125,7 @@ class Readbmp(object):
       end_index_y = 29
 
       path_Counter = 0
+      goal_Counter = 0
       indexErr = 0
       indexFlag = 0
     
@@ -137,25 +138,28 @@ class Readbmp(object):
                 path_Counter += 1
               elif bff[lil_x][lil_y] == self.color(0, 0, 0):
                 color = ''
-              else:
+              elif bff[lil_x][lil_y] == self.color(254, 0, 0):
                 color = bff[lil_x][lil_y]
+              else:
+                goal_Counter += 1
           proportion = path_Counter/(29**2)
           
           if proportion >= 0.5:
             self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = self.color(255, 255, 255)
+          elif goal_Counter > 50 and not color:
+            self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = self.color(5,252,6)
           elif color:
             self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = color
           else:
             self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = self.color(0, 0, 0)
-          print(big_X, big_Y)
-          print(proportion, self.matrix[big_X][big_Y])
-        
+         
           init_index_y += 29
           end_index_y += 29
           path_Counter = 0
+          goal_Counter = 0
         indexErr += 1
         if indexErr >= 4:
-          indexFlag = 1
+          indexFlag = 2
         if indexErr >= 8:
           indexFlag = 3
         if indexErr >= 16:
@@ -171,11 +175,7 @@ class Readbmp(object):
 """
 TESTING
 """
-reader = Readbmp("Test2.bmp")
+reader = Readbmp("Test3.bmp")
 writer = Writebmp()
 reader.discretization()
 writer.writebmp("bmp-out.bmp", reader.fraction, reader.fraction, reader.matrix)
-"""
-print(reader.getFrontierRadio())
-
-"""
