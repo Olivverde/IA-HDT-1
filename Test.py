@@ -29,3 +29,29 @@ def bfs(visited, G, node):
 
 bfs(visited, G, 'A')
         
+
+ 
+#DFS
+  
+
+G = {
+  'A' : ['B','C'],
+  'B' : ['D', 'E'],
+  'C' : ['F'],
+  'D' : [],
+  'E' : ['F'],
+  'F' : []
+}
+
+visited = set() 
+
+def dfs(visited, G, node): 
+    if node not in visited:
+        print (node)
+        visited.add(node)
+        for neighbour in G[node]:
+            dfs(visited, G, neighbour)
+
+
+print("Following is the Depth-First Search")
+dfs(visited, G, '5')
