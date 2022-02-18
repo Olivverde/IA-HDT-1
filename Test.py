@@ -1,5 +1,6 @@
 #BFS
-#Extraido de https://www.educative.io/edpresso/how-to-implement-a-breadth-first-search-in-python
+#Extraido de https://favtutor.com/blogs/breadth-first-search-python & https://favtutor.com/blogs/depth-first-search-python
+
 G = {
   'A' : ['B','C'],
   'B' : ['D', 'E'],
