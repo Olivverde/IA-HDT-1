@@ -1,37 +1,31 @@
-from queue import PriorityQueue
+#BFS
+#Extraido de https://www.educative.io/edpresso/how-to-implement-a-breadth-first-search-in-python
+G = {
+  'A' : ['B','C'],
+  'B' : ['D', 'E'],
+  'C' : ['F'],
+  'D' : [],
+  'E' : ['F'],
+  'F' : []
+}
 
+#Listas
+visited = [] 
+queue = []     
 
-class Graph:
-    def __init__(self, A):
-        self.v = A
-        self.edges = [[-1 for i in range(A)] for j in range(A)]
-        self.visited = []
+#Hacemos seguimiento del nodo
+def bfs(visited, G, node):
+  visited.append(node)
+  queue.append(node)
 
-        def add_edge(self, u, v, weight):
-            self.edges[u][v] = weight
-            self.edges[v][u] = weight
+  while queue:
+    A = queue.pop(0) 
+    print (A, end = " ") 
 
-    def dijkstra(graph, start_vertex):
-        D = {v:float('inf') for v in range(graph.v)}
-        D[start_vertex] = 0
+    for neighbour in G[A]:
+      if neighbour not in visited:
+        visited.append(neighbour)
+        queue.append(neighbour)
 
-    pq = PriorityQueue()
-    pq.put((0, start_vertex))
-
-    while not pq.empty():
-        (dist, current_vertex) = pq.get()
-        graph.visited.append(current_vertex)
-
-        for neighbor in range(graph.v):
-            if graph.edges[current_vertex][neighbor] != -1:
-                distance = graph.edges[current_vertex][neighbor]
-                if neighbor not in graph.visited:
-                    O = D[neighbor]
-                    N = D[current_vertex] + distance
-                    if N < O:
-                        pq.put((N, neighbor))
-                        D[neighbor] = N
-
-    return D
-
+bfs(visited, G, 'A')
         
