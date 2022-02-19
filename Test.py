@@ -33,7 +33,7 @@ bfs(visited, G, 'A')
 
  
 #DFS
-  
+""" 
 
 G = {
   'A' : ['B','C'],
@@ -56,3 +56,4 @@ def dfs(visited, G, node):
 
 print("Following is the Depth-First Search")
 dfs(visited, G, '5')
+"""

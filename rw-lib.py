@@ -73,6 +73,8 @@ class Readbmp(object):
 
         self.read()
         self.generateMatrix()
+        self.generateMatrixZeros()
+        self.discretization()
         
         
     
@@ -114,26 +116,30 @@ class Readbmp(object):
       [self.color(0, 0, 0) for x in range(self.fraction)]
       for y in range(self.fraction)
       ]
-      
-   
+
+    def generateMatrixZeros(self): # Limpia el framebuffer aplicandole color negro
+      self.maze =  [
+      [0 for x in range(self.fraction)]
+      for y in range(self.fraction)
+      ]
+ 
     def discretization(self):
+      self.startCoor = []
+      self.endingCoor = []
+
       color = self.color(1, 1, 1)
       bff = self.buffer
-      init_index_x = 0
-      init_index_y = 0
-      end_index_x = 29
-      end_index_y = 29
+      init_index_x, init_index_y = 0, 0
+      end_index_x, end_index_y = 29, 29
 
-      path_Counter = 0
-      goal_Counter = 0
-      indexErr = 0
-      indexFlag = 0
+      path_Counter, goal_Counter = 0, 0
+      indexErr, indexFlag = 0, 0
     
-      for big_X in range(20):
-        for big_Y in range(20):
-          
+      for big_X in range(self.fraction):
+        for big_Y in range(self.fraction):
           for lil_x in range(init_index_x, end_index_x):
             for lil_y in range(init_index_y, end_index_y):
+
               if bff[lil_x][lil_y] == self.color(255, 255, 255):
                 path_Counter += 1
               elif bff[lil_x][lil_y] == self.color(0, 0, 0):
@@ -142,21 +148,31 @@ class Readbmp(object):
                 color = bff[lil_x][lil_y]
               else:
                 goal_Counter += 1
+
           proportion = path_Counter/(29**2)
-          
+          yIndex = (((big_Y-indexErr)%20)+indexFlag)%20
+
           if proportion >= 0.5:
-            self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = self.color(255, 255, 255)
+            self.matrix[big_X][yIndex] = self.color(255, 255, 255)
+            self.maze[big_X][yIndex] = 0
+
           elif goal_Counter > 50 and not color:
-            self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = self.color(5,252,6)
+            self.matrix[big_X][yIndex] = self.color(5,252,6)
+            self.endingCoor.append([big_X, yIndex])
+
           elif color:
-            self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = color
+            self.matrix[big_X][yIndex] = color
+            self.startCoor = [big_X, yIndex]
+
           else:
-            self.matrix[big_X][(((big_Y-indexErr)%20)+indexFlag)%20] = self.color(0, 0, 0)
+            self.matrix[big_X][yIndex] = self.color(0, 0, 0)
+            self.maze[big_X][yIndex] = 1
          
           init_index_y += 29
           end_index_y += 29
           path_Counter = 0
           goal_Counter = 0
+
         indexErr += 1
         if indexErr >= 4:
           indexFlag = 2
@@ -170,6 +186,81 @@ class Readbmp(object):
         init_index_x += 29
         end_index_x += 29
     
+    def make_step(self, k, m):
+      a = self.maze
+      for i in range(len(m)):
+        for j in range(len(m[i])):
+          if m[i][j] == k:
+            if i>0 and m[i-1][j] == 0 and a[i-1][j] == 0:
+              m[i-1][j] = k + 1
+            if j>0 and m[i][j-1] == 0 and a[i][j-1] == 0:
+              m[i][j-1] = k + 1
+            if i<len(m)-1 and m[i+1][j] == 0 and a[i+1][j] == 0:
+              m[i+1][j] = k + 1
+            if j<len(m[i])-1 and m[i][j+1] == 0 and a[i][j+1] == 0:
+              m[i][j+1] = k + 1
+
+    def bfs(self):
+      maze = self.maze
+      start, ending = self.startCoor, self.endingCoor
+      self.pathCost = []
+      self.paths = []
+
+      for e in ending:
+
+        m = []
+        for i in range(len(maze)):
+            m.append([])
+            for j in range(len(maze[i])):
+                m[-1].append(0)
+        i,j = start
+        m[i][j] = 1
+
+        k = 0
+        while m[e[0]][e[1]] == 0: 
+            k += 1
+            self.make_step(k, m)
+        
+        i, j = e
+        k = m[i][j]
+        the_path = [(i,j)]
+        while k > 1:
+          if i > 0 and m[i - 1][j] == k-1:
+            i, j = i-1, j
+            the_path.append((i, j))
+            k-=1
+          elif j > 0 and m[i][j - 1] == k-1:
+            i, j = i, j-1
+            the_path.append((i, j))
+            k-=1
+          elif i < len(m) - 1 and m[i + 1][j] == k-1:
+            i, j = i+1, j
+            the_path.append((i, j))
+            k-=1
+          elif j < len(m[i]) - 1 and m[i][j + 1] == k-1:
+            i, j = i, j+1
+            the_path.append((i, j))
+            k -= 1
+        self.pathCost.append(len(the_path))
+        self.paths.append(the_path)
+      min_val = min(self.pathCost)
+      min_index = self.pathCost.index(min_val)
+      
+      return self.paths[min_index]
+    
+    def resultPath(self):
+      min_path = self.bfs()
+      for coord in min_path:
+        self.matrix[coord[0]][coord[1]] = self.color(255, 0, 255)
+      self.matrix[min_path[0][0]][min_path[0][1]] = self.color(5,252,6)
+      self.matrix[coord[0]][coord[1]] = self.color = self.color(254, 0, 0)
+        
+        
+
+    
+
+
+    
 
           
 """
@@ -177,5 +268,5 @@ TESTING
 """
 reader = Readbmp("Test3.bmp")
 writer = Writebmp()
-reader.discretization()
+reader.resultPath()
 writer.writebmp("bmp-out.bmp", reader.fraction, reader.fraction, reader.matrix)
